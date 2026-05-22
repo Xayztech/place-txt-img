@@ -2,9 +2,35 @@ const express = require('express');
 const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ─── Register Bundled Fonts ───────────────────────────────────────────────────
+// @napi-rs/canvas uses system fonts, but Vercel serverless has none.
+// We bundle fonts inside the project and register them here.
+const fontsDir = path.join(__dirname, 'fonts');
+if (fs.existsSync(fontsDir)) {
+  // DejaVu Sans (fallback / "Arial" alias)
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans.ttf'), 'Arial');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans-Bold.ttf'), 'Arial');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans-Oblique.ttf'), 'Arial');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans-BoldOblique.ttf'), 'Arial');
+  // DejaVu Sans as its own family
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans.ttf'), 'DejaVu Sans');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans-Bold.ttf'), 'DejaVu Sans');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans-Oblique.ttf'), 'DejaVu Sans');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'DejaVuSans-BoldOblique.ttf'), 'DejaVu Sans');
+  // Poppins
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Poppins-Regular.ttf'), 'Poppins');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Poppins-Bold.ttf'), 'Poppins');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Poppins-Italic.ttf'), 'Poppins');
+  GlobalFonts.registerFromPath(path.join(fontsDir, 'Poppins-BoldItalic.ttf'), 'Poppins');
+  console.log('✅ Fonts registered from bundled fonts/');
+} else {
+  console.warn('⚠️  fonts/ directory not found — text may not render on serverless');
+}
 
 app.use(cors());
 app.use(express.json());
@@ -61,7 +87,6 @@ function generateImage(params) {
     gradientEnd,
     shadow = false,
     shadowColor = 'rgba(0,0,0,0.5)',
-    letterSpacing = 0,
     uppercase = false,
     radius = 0,
   } = params;
@@ -118,11 +143,12 @@ function generateImage(params) {
     ctx.fillRect(0, 0, w, h);
   }
 
-  // Text
+  // Text — handle \n from URL both as literal backslash-n and actual newline
   const rawText = (text || '')
     .replace(/\+/g, ' ')
     .replace(/%20/g, ' ')
-    .replace(/\\n/g, '\n');
+    .replace(/\\n/g, '\n')   // literal \n from URL (e.g. text=Hello\nWorld)
+    .replace(/\r/g, '');     // strip stray CR
 
   const displayText = uppercase ? rawText.toUpperCase() : rawText;
   const lines = displayText ? displayText.split('\n') : [`${w}x${h}`];
@@ -256,9 +282,8 @@ async function handleImageRequest(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    // @napi-rs/canvas: toBuffer() is async and returns a Promise
+    // @napi-rs/canvas: toBuffer() is async
     if (fmt === 'jpeg') {
-      // quality is 0–100 for @napi-rs/canvas (not 0–1)
       const buffer = await canvas.toBuffer('image/jpeg', 92);
       res.send(buffer);
     } else {
