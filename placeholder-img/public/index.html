@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Placeholder Image Text — Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07070f;
+      --surface: #0f0f1e;
+      --surface2: #161628;
+      --border: rgba(255,255,255,0.06);
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --accent3: #f59e0b;
+      --text: #f1f0ff;
+      --muted: rgba(241,240,255,0.45);
+      --neon-purple: #c084fc;
+      --neon-cyan: #22d3ee;
+      --mono: 'DM Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+
+    /* ── MESH BG ── */
+    .mesh {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(6,182,212,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(245,158,11,0.04) 0%, transparent 60%);
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(7,7,15,0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 1rem; font-weight: 800; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.85rem;
+      font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .hamburger {
+      display: flex; flex-direction: column; gap: 5px; cursor: pointer;
+      padding: 8px; border-radius: 8px; transition: background 0.2s;
+    }
+    .hamburger:hover { background: rgba(255,255,255,0.05); }
+    .hamburger span {
+      display: block; width: 28px; height: 2px;
+      background: var(--muted); border-radius: 2px; transition: background 0.2s;
+    }
+    .hamburger:hover span { background: var(--text); }
+
+    /* ── SIDEBAR DRAWER ── */
+    .drawer-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+    .drawer {
+      position: fixed; top: 0; right: -400px; bottom: 0;
+      width: min(380px, 90vw); z-index: 201;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      padding: 32px 28px;
+      transition: right 0.35s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto;
+    }
+    .drawer.open { right: 0; }
+
+    .drawer-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 32px;
+    }
+    .drawer-title {
+      font-size: 1.1rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .drawer-close {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .drawer-close:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+    .drawer-section { margin-bottom: 28px; }
+    .drawer-section h4 {
+      font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: 12px; font-weight: 600;
+    }
+    .drawer-links { list-style: none; }
+    .drawer-links li { margin-bottom: 2px; }
+    .drawer-links a {
+      display: block; padding: 9px 12px; border-radius: 8px;
+      color: var(--muted); text-decoration: none; font-size: 0.88rem;
+      font-family: var(--mono); transition: all 0.2s;
+    }
+    .drawer-links a:hover { background: rgba(124,58,237,0.1); color: var(--text); }
+
+    /* ── MAIN ── */
+    main {
+      position: relative; z-index: 1;
+      padding: 120px 40px 80px;
+      max-width: 1100px; margin: 0 auto;
+    }
+
+    /* ── HERO ── */
+    .hero { text-align: center; margin-bottom: 80px; }
+    .hero-tag {
+      display: inline-block; padding: 6px 16px;
+      border: 1px solid rgba(124,58,237,0.4);
+      border-radius: 100px; font-size: 0.75rem;
+      color: var(--neon-purple); letter-spacing: 0.1em;
+      font-family: var(--mono); margin-bottom: 28px;
+      background: rgba(124,58,237,0.06);
+      animation: fadeUp 0.8s ease both;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.5rem);
+      font-weight: 800; line-height: 1.05;
+      letter-spacing: -0.03em; margin-bottom: 20px;
+      animation: fadeUp 0.8s 0.1s ease both;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-cyan) 60%, var(--accent3) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.05rem; color: var(--muted); max-width: 560px;
+      margin: 0 auto 36px; line-height: 1.7;
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+    .hero-btns {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      animation: fadeUp 0.8s 0.3s ease both;
+    }
+    .btn {
+      padding: 12px 28px; border-radius: 10px; font-size: 0.88rem;
+      font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
+      font-family: var(--sans); text-decoration: none; letter-spacing: 0.02em;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      box-shadow: 0 0 24px rgba(124,58,237,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 32px rgba(124,58,237,0.5); }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+
+    /* ── BUILDER CARD ── */
+    .builder-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px;
+      margin-bottom: 48px;
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+    .builder-title {
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 28px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .builder-title::before {
+      content: ''; display: block; width: 4px; height: 20px;
+      background: linear-gradient(to bottom, var(--accent), var(--accent2));
+      border-radius: 4px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+    .field { display: flex; flex-direction: column; gap: 8px; }
+    .field label {
+      font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); font-weight: 600; font-family: var(--mono);
+    }
+    .field input, .field select, .field textarea {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); padding: 11px 14px; font-size: 0.88rem;
+      font-family: var(--mono); outline: none; transition: border 0.2s;
+      width: 100%;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: rgba(124,58,237,0.5);
+    }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .field select option { background: var(--surface2); }
+
+    .toggle-row {
+      display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0;
+    }
+    .toggle-btn {
+      padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer;
+      font-size: 0.8rem; font-family: var(--mono); transition: all 0.2s;
+    }
+    .toggle-btn.active {
+      background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.5);
+      color: var(--neon-purple);
+    }
+
+    .color-row { display: flex; align-items: center; gap: 10px; }
+    .color-row input[type="color"] {
+      width: 40px; height: 38px; padding: 2px;
+      border-radius: 8px; cursor: pointer; flex-shrink: 0;
+    }
+    .color-row input[type="text"] { flex: 1; }
+
+    .section-divider {
+      height: 1px; background: var(--border); margin: 24px 0;
+    }
+
+    .generate-row {
+      display: flex; gap: 12px; align-items: center; margin-top: 24px;
+    }
+    .btn-generate {
+      padding: 14px 36px; border-radius: 12px; font-size: 0.95rem;
+      font-weight: 700; cursor: pointer; border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white; font-family: var(--sans);
+      box-shadow: 0 0 24px rgba(124,58,237,0.3); transition: all 0.2s;
+    }
+    .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 4px 40px rgba(124,58,237,0.5); }
+
+    /* ── PREVIEW ── */
+    .preview-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px;
+      margin-bottom: 48px;
+    }
+    .preview-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 24px;
+    }
+    .preview-title { font-size: 1rem; font-weight: 700; }
+
+    .preview-box {
+      border-radius: 12px; overflow: hidden;
+      background: repeating-conic-gradient(rgba(255,255,255,0.04) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+      min-height: 200px; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .preview-box img {
+      max-width: 100%; max-height: 500px; border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+    .preview-placeholder {
+      color: var(--muted); font-size: 0.85rem; font-family: var(--mono);
+      text-align: center; padding: 48px;
+    }
+
+    .url-display {
+      margin-top: 20px; padding: 14px 18px;
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 10px; display: flex; align-items: center; gap: 12px;
+    }
+    .url-text {
+      flex: 1; font-family: var(--mono); font-size: 0.8rem;
+      color: var(--neon-cyan); word-break: break-all;
+    }
+    .url-copy {
+      padding: 6px 14px; border-radius: 7px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer;
+      font-size: 0.75rem; font-family: var(--mono); transition: all 0.2s; white-space: nowrap;
+    }
+    .url-copy:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+    /* ── EXAMPLES ── */
+    .examples-section { margin-bottom: 80px; }
+    .section-header { text-align: center; margin-bottom: 40px; }
+    .section-header h2 {
+      font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px;
+    }
+    .section-header p { color: var(--muted); font-size: 0.95rem; }
+
+    .examples-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;
+    }
+    .example-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; cursor: pointer;
+      transition: all 0.25s; group: true;
+    }
+    .example-card:hover { transform: translateY(-4px); border-color: rgba(124,58,237,0.3); }
+    .example-img-wrap {
+      background: repeating-conic-gradient(rgba(255,255,255,0.04) 0% 25%, transparent 0% 50%) 0 0 / 12px 12px;
+      padding: 16px; display: flex; justify-content: center;
+    }
+    .example-img-wrap img { border-radius: 8px; max-width: 100%; height: 120px; object-fit: contain; }
+    .example-info { padding: 14px 16px; }
+    .example-label { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; }
+    .example-url { font-size: 0.7rem; color: var(--muted); font-family: var(--mono); word-break: break-all; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center; padding: 40px;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.8rem; font-family: var(--mono);
+    }
+    footer a { color: var(--neon-cyan); text-decoration: none; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      main { padding: 100px 20px 60px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .builder-card, .preview-section { padding: 24px 20px; }
+      .hero h1 { font-size: 2.2rem; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="mesh"></div>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">PIT API</div>
+  <div class="nav-links">
+    <a href="/home">Home</a>
+    <a href="/docs/api">API Docs</a>
+    <a href="https://github.com" target="_blank">GitHub</a>
+  </div>
+  <div class="hamburger" id="hamburgerBtn" title="Menu & API Docs">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- ── DRAWER ── -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">☰ Navigation & API</div>
+    <button class="drawer-close" id="drawerClose">✕</button>
+  </div>
+
+  <div class="drawer-section">
+    <h4>Pages</h4>
+    <ul class="drawer-links">
+      <li><a href="/home">🏠 Home — Generator</a></li>
+      <li><a href="/docs/api">📖 API Documentation</a></li>
+    </ul>
+  </div>
+
+  <div class="drawer-section">
+    <h4>Quick API Examples</h4>
+    <ul class="drawer-links">
+      <li><a href="/600x400" target="_blank">/600x400 — Default</a></li>
+      <li><a href="/800x400?bg=7209b7&text-colour=white&text=Hello+World&neon=true" target="_blank">/800x400 — Neon Purple</a></li>
+      <li><a href="/300x300?bg=0d1117&text-colour=22d3ee&text=API&border-color=22d3ee&border-width=3&neon=true" target="_blank">/300x300 — Neon Cyan</a></li>
+      <li><a href="/1200x628?bg=0f0f1e&text-colour=f59e0b&text=Open+Graph+Image&font-size=64&gradient=0f0f1e&gradient-end=1a0a40" target="_blank">/1200x628 — OG Image</a></li>
+    </ul>
+  </div>
+
+  <div class="drawer-section">
+    <h4>API Reference</h4>
+    <ul class="drawer-links">
+      <li><a href="/api" target="_blank">GET /api — Health Check</a></li>
+      <li><a href="/docs/api#params">All Parameters →</a></li>
+      <li><a href="/docs/api#examples">Code Examples →</a></li>
+      <li><a href="/docs/api#deploy">Deploy Guide →</a></li>
+    </ul>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-tag">⚡ Placeholder Image Text API v1.0</div>
+    <h1>Generate <span>Placeholder Images</span><br/>Instantly via URL</h1>
+    <p>Create custom placeholder images with text, neon effects, gradients, borders and more — all via a simple URL or API call.</p>
+    <div class="hero-btns">
+      <a href="#builder" class="btn btn-primary">Build Your Image →</a>
+      <a href="/docs/api" class="btn btn-ghost">View API Docs</a>
+    </div>
+  </section>
+
+  <!-- BUILDER -->
+  <section class="builder-card" id="builder">
+    <div class="builder-title">Image Builder</div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="field">
+        <label>Width (px)</label>
+        <input type="number" id="width" value="600" min="10" max="4096" />
+      </div>
+      <div class="field">
+        <label>Height (px)</label>
+        <input type="number" id="height" value="400" min="10" max="4096" />
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:16px">
+      <label>Text (use \n for new line, + or %20 for space)</label>
+      <textarea id="text" placeholder="Hello World\nLine 2&#10;Use + or %20 for spaces in URL"></textarea>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="field">
+        <label>Background Color</label>
+        <div class="color-row">
+          <input type="color" id="bgPicker" value="#0d0d0d" />
+          <input type="text" id="bg" value="0d0d0d" placeholder="hex or name" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Text Color</label>
+        <div class="color-row">
+          <input type="color" id="textColorPicker" value="#ffffff" />
+          <input type="text" id="textColor" value="ffffff" placeholder="hex or name" />
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:16px">
+      <div class="field">
+        <label>Font Size (px, auto if empty)</label>
+        <input type="number" id="fontSize" placeholder="Auto" />
+      </div>
+      <div class="field">
+        <label>Font Family</label>
+        <select id="fontFamily">
+          <option>Arial</option>
+          <option>Georgia</option>
+          <option>Courier New</option>
+          <option>Times New Roman</option>
+          <option>Verdana</option>
+          <option>Trebuchet MS</option>
+          <option>Impact</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Align</label>
+        <select id="align">
+          <option value="center">Center</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div style="margin-bottom:12px;font-size:0.75rem;color:var(--muted);font-family:var(--mono);letter-spacing:0.05em;text-transform:uppercase;">Effects</div>
+    <div class="toggle-row">
+      <button class="toggle-btn" id="toggleNeon" onclick="toggle(this,'neon')">💡 Neon</button>
+      <button class="toggle-btn" id="toggleBold" onclick="toggle(this,'bold')">𝐁 Bold</button>
+      <button class="toggle-btn" id="toggleItalic" onclick="toggle(this,'italic')">𝑰 Italic</button>
+      <button class="toggle-btn" id="toggleShadow" onclick="toggle(this,'shadow')">🌑 Shadow</button>
+      <button class="toggle-btn" id="toggleUppercase" onclick="toggle(this,'uppercase')">Aa UPPERCASE</button>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="grid-4" style="margin-bottom:16px">
+      <div class="field">
+        <label>Border Color</label>
+        <input type="text" id="borderColor" placeholder="e.g. ff00ff" />
+      </div>
+      <div class="field">
+        <label>Border Width</label>
+        <input type="number" id="borderWidth" placeholder="0" min="0" max="40" />
+      </div>
+      <div class="field">
+        <label>Radius (px)</label>
+        <input type="number" id="radius" placeholder="0" min="0" max="500" />
+      </div>
+      <div class="field">
+        <label>Opacity (0–1)</label>
+        <input type="number" id="opacity" value="1" min="0" max="1" step="0.05" />
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="field">
+        <label>Gradient Start Color</label>
+        <input type="text" id="gradient" placeholder="e.g. 1a1a2e (optional)" />
+      </div>
+      <div class="field">
+        <label>Gradient End Color</label>
+        <input type="text" id="gradientEnd" placeholder="e.g. 7209b7 (optional)" />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Format</label>
+        <select id="format">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPEG</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="generate-row">
+      <button class="btn-generate" onclick="generate()">⚡ Generate Image</button>
+      <button class="btn btn-ghost" onclick="reset()">Reset</button>
+    </div>
+  </section>
+
+  <!-- PREVIEW -->
+  <section class="preview-section" id="previewSection">
+    <div class="preview-header">
+      <div class="preview-title">👁 Preview</div>
+      <div id="downloadBtns" style="display:none;display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="downloadImage()" style="font-size:0.8rem;padding:8px 16px">⬇ Download</button>
+      </div>
+    </div>
+
+    <div class="preview-box" id="previewBox">
+      <div class="preview-placeholder">
+        ✦ Configure your image above and click Generate
+      </div>
+    </div>
+
+    <div id="urlDisplay" style="display:none" class="url-display">
+      <div class="url-text" id="urlText"></div>
+      <button class="url-copy" onclick="copyUrl()">📋 Copy URL</button>
+    </div>
+  </section>
+
+  <!-- EXAMPLES -->
+  <section class="examples-section">
+    <div class="section-header">
+      <h2>Example Gallery</h2>
+      <p>Click any example to load it into the builder</p>
+    </div>
+
+    <div class="examples-grid" id="examplesGrid"></div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Placeholder Image Text API — Built with ♥ using Node.js & Canvas</p>
+  <p style="margin-top:8px"><a href="/docs/api">API Docs</a> · <a href="https://github.com" target="_blank">GitHub</a> · <a href="/api">Health Check</a></p>
+</footer>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  const state = { neon: false, bold: false, italic: false, shadow: false, uppercase: false };
+  let currentUrl = '';
+
+  // ── Color pickers sync ─────────────────────────────────────────────────────
+  document.getElementById('bgPicker').addEventListener('input', e => {
+    document.getElementById('bg').value = e.target.value.replace('#', '');
+  });
+  document.getElementById('bg').addEventListener('input', e => {
+    const v = e.target.value.replace('#','');
+    if (v.length === 6 || v.length === 3) document.getElementById('bgPicker').value = '#' + v;
+  });
+  document.getElementById('textColorPicker').addEventListener('input', e => {
+    document.getElementById('textColor').value = e.target.value.replace('#', '');
+  });
+  document.getElementById('textColor').addEventListener('input', e => {
+    const v = e.target.value.replace('#','');
+    if (v.length === 6 || v.length === 3) document.getElementById('textColorPicker').value = '#' + v;
+  });
+
+  // ── Toggle effects ─────────────────────────────────────────────────────────
+  function toggle(el, key) {
+    state[key] = !state[key];
+    el.classList.toggle('active', state[key]);
+  }
+
+  // ── Build URL ──────────────────────────────────────────────────────────────
+  function buildUrl() {
+    const base = window.location.origin;
+    const w = document.getElementById('width').value || 600;
+    const h = document.getElementById('height').value || 400;
+    const params = new URLSearchParams();
+
+    const bg = document.getElementById('bg').value;
+    if (bg) params.set('bg', bg);
+
+    const tc = document.getElementById('textColor').value;
+    if (tc) params.set('text-colour', tc);
+
+    const text = document.getElementById('text').value;
+    if (text) params.set('text', text.replace(/\n/g, '\\n').replace(/ /g, '+'));
+
+    if (state.neon) params.set('neon', 'true');
+    if (state.bold) params.set('bold', 'true');
+    if (state.italic) params.set('italic', 'true');
+    if (state.shadow) params.set('shadow', 'true');
+    if (state.uppercase) params.set('uppercase', 'true');
+
+    const fs = document.getElementById('fontSize').value;
+    if (fs) params.set('font-size', fs);
+
+    const ff = document.getElementById('fontFamily').value;
+    if (ff && ff !== 'Arial') params.set('font', ff);
+
+    const al = document.getElementById('align').value;
+    if (al && al !== 'center') params.set('align', al);
+
+    const bc = document.getElementById('borderColor').value;
+    if (bc) params.set('border-color', bc);
+
+    const bw = document.getElementById('borderWidth').value;
+    if (bw && parseInt(bw) > 0) params.set('border-width', bw);
+
+    const r = document.getElementById('radius').value;
+    if (r && parseInt(r) > 0) params.set('radius', r);
+
+    const op = document.getElementById('opacity').value;
+    if (op && parseFloat(op) < 1) params.set('opacity', op);
+
+    const gr = document.getElementById('gradient').value;
+    if (gr) params.set('gradient', gr);
+
+    const ge = document.getElementById('gradientEnd').value;
+    if (ge) params.set('gradient-end', ge);
+
+    const fmt = document.getElementById('format').value;
+    if (fmt && fmt !== 'png') params.set('format', fmt);
+
+    return `${base}/${w}x${h}?${params.toString()}`;
+  }
+
+  // ── Generate ───────────────────────────────────────────────────────────────
+  function generate() {
+    const url = buildUrl();
+    currentUrl = url;
+
+    const box = document.getElementById('previewBox');
+    box.innerHTML = '<div class="preview-placeholder" style="color:var(--neon-cyan)">Loading...</div>';
+
+    const img = new Image();
+    img.onload = () => {
+      box.innerHTML = '';
+      box.appendChild(img);
+      document.getElementById('urlDisplay').style.display = 'flex';
+      document.getElementById('urlText').textContent = url;
+      document.getElementById('downloadBtns').style.display = 'flex';
+    };
+    img.onerror = () => {
+      box.innerHTML = '<div class="preview-placeholder" style="color:#f87171">Error generating image. Check your settings.</div>';
+    };
+    img.src = url + '&t=' + Date.now();
+    img.style.cssText = 'max-width:100%;max-height:500px;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)';
+  }
+
+  // ── Download ───────────────────────────────────────────────────────────────
+  async function downloadImage() {
+    if (!currentUrl) return;
+    const a = document.createElement('a');
+    a.href = currentUrl;
+    const w = document.getElementById('width').value || 600;
+    const h = document.getElementById('height').value || 400;
+    a.download = `placeholder-${w}x${h}.${document.getElementById('format').value || 'png'}`;
+    a.click();
+  }
+
+  // ── Copy URL ───────────────────────────────────────────────────────────────
+  function copyUrl() {
+    navigator.clipboard.writeText(currentUrl).then(() => {
+      const btn = document.querySelector('.url-copy');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy URL', 1800);
+    });
+  }
+
+  // ── Reset ──────────────────────────────────────────────────────────────────
+  function reset() {
+    document.getElementById('width').value = 600;
+    document.getElementById('height').value = 400;
+    document.getElementById('text').value = '';
+    document.getElementById('bg').value = '0d0d0d';
+    document.getElementById('bgPicker').value = '#0d0d0d';
+    document.getElementById('textColor').value = 'ffffff';
+    document.getElementById('textColorPicker').value = '#ffffff';
+    document.getElementById('fontSize').value = '';
+    document.getElementById('borderColor').value = '';
+    document.getElementById('borderWidth').value = '';
+    document.getElementById('radius').value = '';
+    document.getElementById('opacity').value = '1';
+    document.getElementById('gradient').value = '';
+    document.getElementById('gradientEnd').value = '';
+    Object.keys(state).forEach(k => {
+      state[k] = false;
+      const el = document.getElementById('toggle' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (el) el.classList.remove('active');
+    });
+    document.getElementById('previewBox').innerHTML = '<div class="preview-placeholder">✦ Configure your image above and click Generate</div>';
+    document.getElementById('urlDisplay').style.display = 'none';
+    document.getElementById('downloadBtns').style.display = 'none';
+  }
+
+  // ── Load example ───────────────────────────────────────────────────────────
+  function loadExample(ex) {
+    document.getElementById('width').value = ex.width;
+    document.getElementById('height').value = ex.height;
+    document.getElementById('text').value = ex.text || '';
+    document.getElementById('bg').value = ex.bg || '0d0d0d';
+    document.getElementById('bgPicker').value = '#' + (ex.bg || '0d0d0d').replace('#','');
+    document.getElementById('textColor').value = ex.textColor || 'ffffff';
+    document.getElementById('textColorPicker').value = '#' + (ex.textColor || 'ffffff').replace('#','');
+    if (ex.fontSize) document.getElementById('fontSize').value = ex.fontSize;
+    if (ex.borderColor) document.getElementById('borderColor').value = ex.borderColor;
+    if (ex.borderWidth) document.getElementById('borderWidth').value = ex.borderWidth;
+    if (ex.radius) document.getElementById('radius').value = ex.radius;
+    if (ex.gradient) document.getElementById('gradient').value = ex.gradient;
+    if (ex.gradientEnd) document.getElementById('gradientEnd').value = ex.gradientEnd;
+
+    Object.keys(state).forEach(k => {
+      state[k] = !!ex[k];
+      const el = document.getElementById('toggle' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (el) el.classList.toggle('active', !!ex[k]);
+    });
+
+    document.getElementById('builder').scrollIntoView({ behavior: 'smooth' });
+    setTimeout(generate, 400);
+  }
+
+  // ── Examples data ──────────────────────────────────────────────────────────
+  const examples = [
+    { label: 'Basic Dark', width: 600, height: 400, bg: '0d0d0d', textColor: 'ffffff', text: 'Hello World' },
+    { label: 'Neon Purple', width: 600, height: 400, bg: '07070f', textColor: 'c084fc', text: 'NEON TEXT', neon: true, bold: true },
+    { label: 'Neon Cyan', width: 400, height: 300, bg: '020617', textColor: '22d3ee', text: 'CYBER\nWORLD', neon: true, borderColor: '22d3ee', borderWidth: 2 },
+    { label: 'Gradient BG', width: 800, height: 400, bg: '1a1a2e', textColor: 'fbbf24', text: 'Gradient Image', gradient: '0f0f1e', gradientEnd: '7c3aed', bold: true, fontSize: 56 },
+    { label: 'OG Image', width: 1200, height: 628, bg: '0d1117', textColor: 'f1f0ff', text: 'Open Graph Image\n1200 × 628', gradient: '0d1117', gradientEnd: '1e0a3c', fontSize: 68 },
+    { label: 'Avatar Square', width: 300, height: 300, bg: '7c3aed', textColor: 'ffffff', text: 'AB', bold: true, fontSize: 96, radius: 150, neon: true },
+    { label: 'Watermark Style', width: 600, height: 400, bg: '1e1b4b', textColor: 'a5b4fc', text: 'WATERMARK\nSAMPLE', italic: true, uppercase: true, opacity: 0.7 },
+    { label: 'Neon Pink', width: 600, height: 300, bg: '0a0010', textColor: 'f472b6', text: 'PINK NEON', neon: true, bold: true, borderColor: 'f472b6', borderWidth: 3 },
+    { label: 'Gold Luxury', width: 700, height: 400, bg: '1c1400', textColor: 'ffd700', text: 'LUXURY', bold: true, fontSize: 80, shadow: true, uppercase: true },
+    { label: 'Minimal Light', width: 600, height: 400, bg: 'f8f8f8', textColor: '1a1a2e', text: 'Clean & Minimal', bold: true },
+    { label: 'Tech Grid', width: 500, height: 500, bg: '020c1b', textColor: '64ffda', text: '[ API ]\nv1.0.0', neon: true, fontFamily: 'Courier New', borderColor: '64ffda', borderWidth: 1 },
+    { label: 'Multi-line', width: 600, height: 400, bg: '0f172a', textColor: '38bdf8', text: 'Line One\nLine Two\nLine Three', fontSize: 36, bold: true },
+  ];
+
+  // ── Render examples ────────────────────────────────────────────────────────
+  const grid = document.getElementById('examplesGrid');
+  examples.forEach((ex, i) => {
+    const base = window.location.origin;
+    const params = new URLSearchParams();
+    params.set('bg', ex.bg || '0d0d0d');
+    params.set('text-colour', ex.textColor || 'ffffff');
+    if (ex.text) params.set('text', ex.text.replace(/\n/g, '\\n').replace(/ /g, '+'));
+    if (ex.neon) params.set('neon', 'true');
+    if (ex.bold) params.set('bold', 'true');
+    if (ex.italic) params.set('italic', 'true');
+    if (ex.shadow) params.set('shadow', 'true');
+    if (ex.fontSize) params.set('font-size', ex.fontSize);
+    if (ex.borderColor) params.set('border-color', ex.borderColor);
+    if (ex.borderWidth) params.set('border-width', ex.borderWidth);
+    if (ex.radius) params.set('radius', ex.radius);
+    if (ex.gradient) params.set('gradient', ex.gradient);
+    if (ex.gradientEnd) params.set('gradient-end', ex.gradientEnd);
+    if (ex.opacity) params.set('opacity', ex.opacity);
+    if (ex.uppercase) params.set('uppercase', 'true');
+    const url = `${base}/${ex.width}x${ex.height}?${params}`;
+
+    const card = document.createElement('div');
+    card.className = 'example-card';
+    card.style.animationDelay = `${i * 0.05}s`;
+    card.innerHTML = `
+      <div class="example-img-wrap">
+        <img src="${url}" alt="${ex.label}" loading="lazy" />
+      </div>
+      <div class="example-info">
+        <div class="example-label">${ex.label}</div>
+        <div class="example-url">${ex.width}×${ex.height} · /${ex.width}x${ex.height}</div>
+      </div>
+    `;
+    card.onclick = () => loadExample(ex);
+    grid.appendChild(card);
+  });
+
+  // ── Drawer ─────────────────────────────────────────────────────────────────
+  const drawerOverlay = document.getElementById('drawerOverlay');
+  const drawer = document.getElementById('drawer');
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const drawerClose = document.getElementById('drawerClose');
+
+  hamburgerBtn.onclick = () => { drawer.classList.add('open'); drawerOverlay.classList.add('open'); };
+  drawerClose.onclick = closeDrawer;
+  drawerOverlay.onclick = closeDrawer;
+  function closeDrawer() { drawer.classList.remove('open'); drawerOverlay.classList.remove('open'); }
+</script>
+
+</body>
+</html>

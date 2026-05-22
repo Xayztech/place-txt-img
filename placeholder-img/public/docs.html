@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Documentation — Placeholder Image Text</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07070f;
+      --surface: #0f0f1e;
+      --surface2: #161628;
+      --border: rgba(255,255,255,0.06);
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --accent3: #f59e0b;
+      --text: #f1f0ff;
+      --muted: rgba(241,240,255,0.45);
+      --neon-purple: #c084fc;
+      --neon-cyan: #22d3ee;
+      --code-bg: #0a0a18;
+      --mono: 'DM Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+    .mesh {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(124,58,237,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(6,182,212,0.08) 0%, transparent 55%);
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(7,7,15,0.7); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-size: 1rem; font-weight: 800; text-decoration: none;
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.85rem;
+      font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+    .hamburger {
+      display: flex; flex-direction: column; gap: 5px; cursor: pointer;
+      padding: 8px; border-radius: 8px; transition: background 0.2s;
+    }
+    .hamburger:hover { background: rgba(255,255,255,0.05); }
+    .hamburger span { display: block; width: 28px; height: 2px; background: var(--muted); border-radius: 2px; transition: background 0.2s; }
+    .hamburger:hover span { background: var(--text); }
+
+    .drawer-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .drawer-overlay.open { opacity: 1; pointer-events: all; }
+    .drawer {
+      position: fixed; top: 0; right: -400px; bottom: 0;
+      width: min(380px, 90vw); z-index: 201;
+      background: var(--surface); border-left: 1px solid var(--border);
+      padding: 32px 28px; transition: right 0.35s cubic-bezier(.4,0,.2,1); overflow-y: auto;
+    }
+    .drawer.open { right: 0; }
+    .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+    .drawer-title { font-size: 1.1rem; font-weight: 700; background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .drawer-close { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .drawer-close:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    .drawer-section { margin-bottom: 28px; }
+    .drawer-section h4 { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent2); margin-bottom: 12px; font-weight: 600; }
+    .drawer-links { list-style: none; }
+    .drawer-links li { margin-bottom: 2px; }
+    .drawer-links a { display: block; padding: 9px 12px; border-radius: 8px; color: var(--muted); text-decoration: none; font-size: 0.88rem; font-family: var(--mono); transition: all 0.2s; }
+    .drawer-links a:hover { background: rgba(124,58,237,0.1); color: var(--text); }
+
+    /* LAYOUT */
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar {
+      position: fixed; top: 73px; left: 0; bottom: 0;
+      width: 260px; padding: 32px 20px; overflow-y: auto;
+      border-right: 1px solid var(--border);
+      background: rgba(7,7,15,0.6); backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+    .sidebar-section { margin-bottom: 28px; }
+    .sidebar-section h4 { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent2); margin-bottom: 10px; font-weight: 600; font-family: var(--mono); }
+    .sidebar-link {
+      display: block; padding: 7px 10px; border-radius: 7px; color: var(--muted);
+      text-decoration: none; font-size: 0.82rem; font-family: var(--mono); transition: all 0.2s; margin-bottom: 2px;
+    }
+    .sidebar-link:hover { background: rgba(124,58,237,0.1); color: var(--text); }
+    .sidebar-link.active { background: rgba(124,58,237,0.15); color: var(--neon-purple); }
+
+    .content {
+      margin-left: 260px; padding: 100px 48px 80px;
+      max-width: 900px; position: relative; z-index: 1; flex: 1;
+    }
+
+    /* SECTIONS */
+    .doc-section { margin-bottom: 72px; scroll-margin-top: 100px; }
+    .doc-section h2 {
+      font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--text) 60%, var(--neon-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .doc-section > p { color: var(--muted); line-height: 1.7; margin-bottom: 28px; font-size: 0.95rem; }
+
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.7rem;
+      font-family: var(--mono); font-weight: 600; letter-spacing: 0.05em;
+      margin-right: 6px; vertical-align: middle;
+    }
+    .badge-get { background: rgba(34,211,238,0.1); color: var(--neon-cyan); border: 1px solid rgba(34,211,238,0.2); }
+    .badge-post { background: rgba(245,158,11,0.1); color: var(--accent3); border: 1px solid rgba(245,158,11,0.2); }
+
+    /* ENDPOINT CARDS */
+    .endpoint-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; margin-bottom: 20px;
+    }
+    .endpoint-path {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .endpoint-url { font-family: var(--mono); font-size: 0.9rem; color: var(--neon-cyan); }
+    .endpoint-desc { color: var(--muted); font-size: 0.88rem; line-height: 1.6; }
+
+    /* PARAMS TABLE */
+    .param-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .param-table th {
+      text-align: left; padding: 10px 14px; font-size: 0.7rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--accent2); border-bottom: 1px solid var(--border);
+      font-family: var(--mono); font-weight: 600;
+    }
+    .param-table td {
+      padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-size: 0.85rem; vertical-align: top; line-height: 1.5;
+    }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-table td:first-child { font-family: var(--mono); color: var(--neon-cyan); }
+    .param-table td:nth-child(2) { color: var(--muted); font-family: var(--mono); font-size: 0.78rem; }
+    .param-table td:nth-child(3) { color: var(--muted); }
+    .param-table td:last-child { font-family: var(--mono); font-size: 0.78rem; color: var(--accent3); }
+
+    /* CODE BLOCKS */
+    .code-tabs { display: flex; gap: 4px; margin-bottom: -1px; position: relative; z-index: 1; flex-wrap: wrap; }
+    .code-tab {
+      padding: 8px 18px; border-radius: 8px 8px 0 0;
+      border: 1px solid var(--border); border-bottom: none;
+      background: var(--surface2); color: var(--muted);
+      cursor: pointer; font-size: 0.78rem; font-family: var(--mono); transition: all 0.2s;
+    }
+    .code-tab.active { background: var(--code-bg); color: var(--text); border-color: var(--border); }
+
+    .code-block-wrap { position: relative; }
+    .code-panel {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 0 12px 12px 12px; overflow: hidden; display: none;
+    }
+    .code-panel.active { display: block; }
+    .code-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+    }
+    .code-lang { font-size: 0.7rem; font-family: var(--mono); color: var(--muted); letter-spacing: 0.08em; }
+    .code-copy {
+      padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer;
+      font-size: 0.72rem; font-family: var(--mono); transition: all 0.2s;
+    }
+    .code-copy:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+    pre {
+      padding: 20px; overflow-x: auto; font-family: var(--mono);
+      font-size: 0.82rem; line-height: 1.7; color: #e2e8f0;
+    }
+    .kw { color: #c084fc; }
+    .str { color: #86efac; }
+    .cm { color: #64748b; font-style: italic; }
+    .fn { color: #7dd3fc; }
+    .num { color: #fb923c; }
+    .var { color: #f1f0ff; }
+
+    /* ALERT */
+    .alert {
+      padding: 14px 18px; border-radius: 10px; font-size: 0.85rem;
+      line-height: 1.6; margin-bottom: 20px; font-family: var(--mono);
+    }
+    .alert-info { background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.2); color: var(--neon-cyan); }
+    .alert-warn { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: var(--accent3); }
+
+    footer { text-align: center; padding: 40px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; font-family: var(--mono); }
+    footer a { color: var(--neon-cyan); text-decoration: none; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content { margin-left: 0; padding: 100px 20px 60px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="mesh"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/home">PIT API</a>
+  <div class="nav-links">
+    <a href="/home">Home</a>
+    <a href="/docs/api" class="active">API Docs</a>
+    <a href="/api" target="_blank">Health</a>
+  </div>
+  <div class="hamburger" id="hamburgerBtn">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">☰ Navigation</div>
+    <button class="drawer-close" id="drawerClose">✕</button>
+  </div>
+  <div class="drawer-section">
+    <h4>Pages</h4>
+    <ul class="drawer-links">
+      <li><a href="/home">🏠 Home — Generator</a></li>
+      <li><a href="/docs/api">📖 API Documentation</a></li>
+    </ul>
+  </div>
+  <div class="drawer-section">
+    <h4>API Sections</h4>
+    <ul class="drawer-links">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#endpoints">Endpoints</a></li>
+      <li><a href="#params">Parameters</a></li>
+      <li><a href="#examples">Code Examples</a></li>
+      <li><a href="#deploy">Deploy Guide</a></li>
+    </ul>
+  </div>
+</aside>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h4>Getting Started</h4>
+      <a class="sidebar-link active" href="#overview">Overview</a>
+      <a class="sidebar-link" href="#endpoints">Endpoints</a>
+      <a class="sidebar-link" href="#params">Parameters</a>
+      <a class="sidebar-link" href="#named-colors">Named Colors</a>
+    </div>
+    <div class="sidebar-section">
+      <h4>Code Examples</h4>
+      <a class="sidebar-link" href="#ex-js-fetch">JavaScript Fetch</a>
+      <a class="sidebar-link" href="#ex-node">Node.js</a>
+      <a class="sidebar-link" href="#ex-python">Python</a>
+      <a class="sidebar-link" href="#ex-php">PHP</a>
+      <a class="sidebar-link" href="#ex-curl">cURL</a>
+      <a class="sidebar-link" href="#ex-rust">Rust</a>
+      <a class="sidebar-link" href="#ex-go">Go</a>
+      <a class="sidebar-link" href="#ex-ruby">Ruby</a>
+      <a class="sidebar-link" href="#ex-swift">Swift</a>
+      <a class="sidebar-link" href="#ex-html">HTML</a>
+      <a class="sidebar-link" href="#ex-react">React</a>
+      <a class="sidebar-link" href="#ex-vue">Vue.js</a>
+      <a class="sidebar-link" href="#ex-dart">Dart/Flutter</a>
+    </div>
+    <div class="sidebar-section">
+      <h4>Deployment</h4>
+      <a class="sidebar-link" href="#deploy">Deploy Guide</a>
+      <a class="sidebar-link" href="#vercel">Vercel</a>
+      <a class="sidebar-link" href="#railway">Railway</a>
+      <a class="sidebar-link" href="#render">Render</a>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- OVERVIEW -->
+    <section class="doc-section" id="overview">
+      <h2>API Overview</h2>
+      <p>Placeholder Image Text (PIT) is a free, open-source API to generate custom placeholder images with text, neon effects, gradients, borders, and more — all via a simple URL.</p>
+
+      <div class="alert alert-info">
+        ⚡ Base URL: <strong>https://your-domain.com</strong> &nbsp;·&nbsp; No auth required &nbsp;·&nbsp; CORS enabled
+      </div>
+
+      <div class="alert alert-warn">
+        💡 Tip: Images are generated on-the-fly. Cache-Control is set to 24h. Max size: 4096×4096px.
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-path">
+          <span class="badge badge-get">GET</span>
+          <span class="endpoint-url">/api — Health check & info</span>
+        </div>
+        <div class="endpoint-desc">Returns API status, version, and available endpoints as JSON.</div>
+      </div>
+    </section>
+
+    <!-- ENDPOINTS -->
+    <section class="doc-section" id="endpoints">
+      <h2>Endpoints</h2>
+      <p>All endpoints return a PNG or JPEG image. Mix and match parameters freely.</p>
+
+      <div class="endpoint-card">
+        <div class="endpoint-path">
+          <span class="badge badge-get">GET</span>
+          <span class="endpoint-url">/{width}x{height}</span>
+        </div>
+        <div class="endpoint-desc">Main image generation endpoint. Example: <code>/600x400?text=Hello&bg=0d0d0d</code></div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-path">
+          <span class="badge badge-get">GET</span>
+          <span class="endpoint-url">/api/{width}x{height}</span>
+        </div>
+        <div class="endpoint-desc">API-prefixed route. Identical to above. Example: <code>/api/600x400?text=Hello</code></div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-path">
+          <span class="badge badge-get">GET</span>
+          <span class="endpoint-url">/{width}x{height}/{bg-color}</span>
+        </div>
+        <div class="endpoint-desc">Path-based color. Example: <code>/600x400/dark</code> or <code>/600x400/7209b7</code></div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-path">
+          <span class="badge badge-get">GET</span>
+          <span class="endpoint-url">/{width}x{height}/neon=true/{bg}?text-colour={color}&text={text}</span>
+        </div>
+        <div class="endpoint-desc">Supports your original URL format from the path. Example: <code>/600x400/neon=true/dark?text-colour=white&text=Hello</code></div>
+      </div>
+    </section>
+
+    <!-- PARAMS -->
+    <section class="doc-section" id="params">
+      <h2>Query Parameters</h2>
+      <p>All parameters are optional. Parameters can be passed as query strings or in the URL path.</p>
+
+      <table class="param-table">
+        <thead>
+          <tr><th>Parameter</th><th>Type</th><th>Description</th><th>Default</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>bg</td><td>string</td><td>Background color (hex without #, or named color)</td><td>1a1a2e</td></tr>
+          <tr><td>text-colour</td><td>string</td><td>Text color (hex or named). Also: text-color, color, colour</td><td>ffffff</td></tr>
+          <tr><td>text</td><td>string</td><td>Display text. Use + or %20 for spaces, \n for new lines</td><td>{W}x{H}</td></tr>
+          <tr><td>neon</td><td>boolean</td><td>Enable neon glow effect on text</td><td>false</td></tr>
+          <tr><td>bold</td><td>boolean</td><td>Bold text</td><td>false</td></tr>
+          <tr><td>italic</td><td>boolean</td><td>Italic text</td><td>false</td></tr>
+          <tr><td>shadow</td><td>boolean</td><td>Drop shadow on text</td><td>false</td></tr>
+          <tr><td>uppercase</td><td>boolean</td><td>Uppercase text transformation</td><td>false</td></tr>
+          <tr><td>font-size</td><td>number</td><td>Font size in pixels. Auto-calculated if omitted</td><td>auto</td></tr>
+          <tr><td>font</td><td>string</td><td>Font family (Arial, Georgia, Courier New, etc.)</td><td>Arial</td></tr>
+          <tr><td>align</td><td>string</td><td>Text alignment: center, left, right</td><td>center</td></tr>
+          <tr><td>border-color</td><td>string</td><td>Border color (hex or named)</td><td>none</td></tr>
+          <tr><td>border-width</td><td>number</td><td>Border thickness in pixels</td><td>0</td></tr>
+          <tr><td>radius</td><td>number</td><td>Border radius in pixels (rounded corners)</td><td>0</td></tr>
+          <tr><td>opacity</td><td>number</td><td>Overall opacity (0.0 to 1.0)</td><td>1</td></tr>
+          <tr><td>gradient</td><td>string</td><td>Gradient start color (replaces solid bg)</td><td>none</td></tr>
+          <tr><td>gradient-end</td><td>string</td><td>Gradient end color</td><td>none</td></tr>
+          <tr><td>shadow-color</td><td>string</td><td>Shadow color (CSS rgba/hex)</td><td>rgba(0,0,0,0.5)</td></tr>
+          <tr><td>format</td><td>string</td><td>Output format: png or jpeg</td><td>png</td></tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:20px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;">
+        <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-bottom:8px;letter-spacing:0.06em">TEXT SHORTCUTS</div>
+        <div style="font-family:var(--mono);font-size:0.82rem;color:var(--text);line-height:2">
+          <span style="color:var(--neon-cyan)">+</span> or <span style="color:var(--neon-cyan)">%20</span> → space&nbsp;&nbsp;&nbsp;
+          <span style="color:var(--neon-cyan)">\n</span> → new line&nbsp;&nbsp;&nbsp;
+          <span style="color:var(--neon-cyan)">%0A</span> → new line
+        </div>
+      </div>
+    </section>
+
+    <!-- NAMED COLORS -->
+    <section class="doc-section" id="named-colors">
+      <h2>Named Colors</h2>
+      <p>Use these names anywhere a color is expected (bg, text-colour, border-color, gradient).</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+        <script>
+          const colors = ['dark','black','white','light','red','blue','green','purple','yellow','orange','pink','gray','navy','cyan','teal','neongreen','neonblue','neonpink','gold'];
+          const hexes = {'dark':'0d0d0d','black':'000000','white':'ffffff','light':'f5f5f5','red':'e63946','blue':'457b9d','green':'2d6a4f','purple':'7209b7','yellow':'f4a261','orange':'e76f51','pink':'f72585','gray':'555555','navy':'1d3557','cyan':'48cae4','teal':'0f4c75','neongreen':'39ff14','neonblue':'00f5ff','neonpink':'ff006e','gold':'ffd700'};
+          document.write(colors.map(c => `<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px"><div style="width:16px;height:16px;background:#${hexes[c]};border-radius:4px;border:1px solid rgba(255,255,255,0.1)"></div><span style="font-family:var(--mono);font-size:0.78rem;color:var(--muted)">${c}</span></div>`).join(''));
+        </script>
+      </div>
+    </section>
+
+    <!-- CODE EXAMPLES -->
+    <section class="doc-section" id="examples">
+      <h2>Code Examples</h2>
+      <p>Examples for every major language and framework. Replace <code>https://your-domain.com</code> with your actual domain.</p>
+
+      <!-- JS FETCH -->
+      <div id="ex-js-fetch" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">JavaScript — Fetch API</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">JAVASCRIPT</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="cm">// Basic usage — insert image into DOM</span>
+<span class="kw">const</span> <span class="var">img</span> = <span class="fn">document.createElement</span>(<span class="str">'img'</span>);
+<span class="var">img</span>.src = <span class="str">'https://your-domain.com/600x400?bg=0d0d0d&text-colour=white&text=Hello+World&neon=true'</span>;
+<span class="fn">document.body.appendChild</span>(<span class="var">img</span>);
+
+<span class="cm">// Download image via Fetch</span>
+<span class="kw">async function</span> <span class="fn">downloadPlaceholder</span>() {
+  <span class="kw">const</span> <span class="var">url</span> = <span class="str">`https://your-domain.com/800x400?bg=7209b7&text-colour=c084fc&text=Neon+Purple&neon=true&bold=true`</span>;
+  <span class="kw">const</span> <span class="var">res</span> = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="var">url</span>);
+  <span class="kw">const</span> <span class="var">blob</span> = <span class="kw">await</span> <span class="var">res</span>.<span class="fn">blob</span>();
+  <span class="kw">const</span> <span class="var">link</span> = <span class="fn">document.createElement</span>(<span class="str">'a'</span>);
+  <span class="var">link</span>.href = <span class="var">URL</span>.<span class="fn">createObjectURL</span>(<span class="var">blob</span>);
+  <span class="var">link</span>.download = <span class="str">'placeholder.png'</span>;
+  <span class="var">link</span>.<span class="fn">click</span>();
+}
+
+<span class="cm">// Build URL dynamically</span>
+<span class="kw">function</span> <span class="fn">buildImageUrl</span>(<span class="var">w</span>, <span class="var">h</span>, <span class="var">opts</span> = {}) {
+  <span class="kw">const</span> <span class="var">base</span> = <span class="str">'https://your-domain.com'</span>;
+  <span class="kw">const</span> <span class="var">params</span> = <span class="kw">new</span> <span class="fn">URLSearchParams</span>(<span class="var">opts</span>);
+  <span class="kw">return</span> <span class="str">`<span class="var">${base}</span>/<span class="var">${w}</span>x<span class="var">${h}</span>?<span class="var">${params}</span>`</span>;
+}
+<span class="fn">console.log</span>(<span class="fn">buildImageUrl</span>(<span class="num">600</span>, <span class="num">400</span>, { bg: <span class="str">'0d0d0d'</span>, <span class="str">'text-colour'</span>: <span class="str">'white'</span>, text: <span class="str">'Hello'</span>, neon: <span class="str">'true'</span> }));</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- NODE.JS -->
+      <div id="ex-node" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Node.js</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">NODE.JS (CJS)</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="kw">const</span> <span class="var">https</span> = <span class="fn">require</span>(<span class="str">'https'</span>);
+<span class="kw">const</span> <span class="var">fs</span> = <span class="fn">require</span>(<span class="str">'fs'</span>);
+
+<span class="cm">// Download image to file</span>
+<span class="kw">function</span> <span class="fn">downloadImage</span>(<span class="var">url</span>, <span class="var">filepath</span>) {
+  <span class="kw">return new</span> <span class="fn">Promise</span>((<span class="var">resolve</span>, <span class="var">reject</span>) => {
+    <span class="var">https</span>.<span class="fn">get</span>(<span class="var">url</span>, (<span class="var">res</span>) => {
+      <span class="kw">const</span> <span class="var">file</span> = <span class="var">fs</span>.<span class="fn">createWriteStream</span>(<span class="var">filepath</span>);
+      <span class="var">res</span>.<span class="fn">pipe</span>(<span class="var">file</span>);
+      <span class="var">file</span>.<span class="fn">on</span>(<span class="str">'finish'</span>, <span class="var">resolve</span>);
+      <span class="var">file</span>.<span class="fn">on</span>(<span class="str">'error'</span>, <span class="var">reject</span>);
+    });
+  });
+}
+
+<span class="kw">const</span> <span class="var">url</span> = <span class="str">'https://your-domain.com/600x400?bg=1a1a2e&text-colour=c084fc&text=Node.js+Image&neon=true'</span>;
+<span class="fn">downloadImage</span>(<span class="var">url</span>, <span class="str">'output.png'</span>).<span class="fn">then</span>(() => <span class="fn">console.log</span>(<span class="str">'Saved!'</span>));
+
+<span class="cm">// Using node-fetch (ESM also supported)</span>
+<span class="cm">// npm install node-fetch</span>
+<span class="kw">const</span> <span class="fn">fetch</span> = <span class="fn">require</span>(<span class="str">'node-fetch'</span>);
+<span class="kw">const</span> <span class="var">res</span> = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'https://your-domain.com/1200x628?text=OG+Image&bg=0d1117&text-colour=f1f0ff&gradient=0d1117&gradient-end=1e0a3c'</span>);
+<span class="kw">const</span> <span class="var">buffer</span> = <span class="kw">await</span> <span class="var">res</span>.<span class="fn">buffer</span>();
+<span class="var">fs</span>.<span class="fn">writeFileSync</span>(<span class="str">'og-image.png'</span>, <span class="var">buffer</span>);</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- PYTHON -->
+      <div id="ex-python" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Python</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">PYTHON 3</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="kw">import</span> <span class="var">requests</span>
+<span class="kw">from</span> <span class="var">urllib.parse</span> <span class="kw">import</span> <span class="var">urlencode</span>
+
+BASE_URL = <span class="str">"https://your-domain.com"</span>
+
+<span class="cm"># Simple download</span>
+<span class="kw">def</span> <span class="fn">generate_image</span>(width, height, **kwargs):
+    params = urlencode(kwargs)
+    url = <span class="str">f"</span>{BASE_URL}<span class="str">/</span>{width}<span class="str">x</span>{height}<span class="str">?</span>{params}<span class="str">"</span>
+    response = requests.<span class="fn">get</span>(url)
+    <span class="kw">return</span> response.content
+
+<span class="cm"># Generate and save</span>
+img_bytes = <span class="fn">generate_image</span>(
+    <span class="num">600</span>, <span class="num">400</span>,
+    bg=<span class="str">"0d0d0d"</span>,
+    **{<span class="str">"text-colour"</span>: <span class="str">"22d3ee"</span>},
+    text=<span class="str">"Python+Image"</span>,
+    neon=<span class="str">"true"</span>,
+    bold=<span class="str">"true"</span>
+)
+<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"output.png"</span>, <span class="str">"wb"</span>) <span class="kw">as</span> f:
+    f.<span class="fn">write</span>(img_bytes)
+<span class="fn">print</span>(<span class="str">"Image saved!"</span>)
+
+<span class="cm"># Display in Jupyter/IPython</span>
+<span class="kw">from</span> <span class="var">IPython.display</span> <span class="kw">import</span> Image, <span class="fn">display</span>
+url = <span class="str">f"</span>{BASE_URL}<span class="str">/800x400?bg=7209b7&text-colour=white&text=Jupyter+Preview&neon=true"</span>
+<span class="fn">display</span>(<span class="fn">Image</span>(url=url))</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHP -->
+      <div id="ex-php" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">PHP</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">PHP 8</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="kw">&lt;?php</span>
+<span class="cm">// Simple img tag in HTML</span>
+<span class="var">$url</span> = <span class="str">'https://your-domain.com/600x400?bg=0d0d0d&text-colour=white&text=PHP+Image&neon=true'</span>;
+<span class="kw">echo</span> <span class="str">"&lt;img src='</span><span class="var">$url</span><span class="str">' alt='placeholder' /&gt;"</span>;
+
+<span class="cm">// Download and save with file_get_contents</span>
+<span class="var">$params</span> = <span class="fn">http_build_query</span>([
+    <span class="str">'bg'</span>           => <span class="str">'1a1a2e'</span>,
+    <span class="str">'text-colour'</span>  => <span class="str">'c084fc'</span>,
+    <span class="str">'text'</span>         => <span class="str">'PHP+Sample'</span>,
+    <span class="str">'neon'</span>         => <span class="str">'true'</span>,
+    <span class="str">'bold'</span>         => <span class="str">'true'</span>,
+]);
+<span class="var">$imageData</span> = <span class="fn">file_get_contents</span>(<span class="str">"https://your-domain.com/800x400?</span><span class="var">$params</span><span class="str">"</span>);
+<span class="fn">file_put_contents</span>(<span class="str">'placeholder.png'</span>, <span class="var">$imageData</span>);
+
+<span class="cm">// Using cURL for more control</span>
+<span class="var">$ch</span> = <span class="fn">curl_init</span>(<span class="str">"https://your-domain.com/1200x628?text=OG+Image&bg=0f0f1e&text-colour=f1f0ff"</span>);
+<span class="fn">curl_setopt</span>(<span class="var">$ch</span>, CURLOPT_RETURNTRANSFER, <span class="kw">true</span>);
+<span class="var">$data</span> = <span class="fn">curl_exec</span>(<span class="var">$ch</span>);
+<span class="fn">curl_close</span>(<span class="var">$ch</span>);
+<span class="fn">file_put_contents</span>(<span class="str">'og-image.png'</span>, <span class="var">$data</span>);
+<span class="kw">?&gt;</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- CURL -->
+      <div id="ex-curl" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">cURL (Terminal)</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">SHELL / BASH</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="cm"># Simple download</span>
+curl -o placeholder.png "https://your-domain.com/600x400?bg=0d0d0d&text-colour=white&text=Hello+World"
+
+<span class="cm"># With neon effect</span>
+curl -o neon.png "https://your-domain.com/800x400?bg=07070f&text-colour=c084fc&text=NEON+TEXT&neon=true&bold=true"
+
+<span class="cm"># OG image (1200x628)</span>
+curl -o og.png "https://your-domain.com/1200x628?bg=0d1117&text-colour=f1f0ff&text=My+Website&gradient=0d1117&gradient-end=1e0a3c&font-size=72"
+
+<span class="cm"># Multi-line text</span>
+curl -o multiline.png "https://your-domain.com/600x400?text=Line+One\nLine+Two\nLine+Three&bg=0f172a&text-colour=38bdf8&bold=true"
+
+<span class="cm"># JPEG format</span>
+curl -o output.jpg "https://your-domain.com/600x400?format=jpeg&bg=1a1a2e&text-colour=fbbf24&text=JPEG+Image"
+
+<span class="cm"># Health check</span>
+curl https://your-domain.com/api | json_pp</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUST -->
+      <div id="ex-rust" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Rust</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">RUST</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="cm">// Cargo.toml: reqwest = { version = "0.11", features = ["blocking"] }</span>
+<span class="kw">use</span> <span class="var">std::fs</span>;
+<span class="kw">use</span> <span class="var">reqwest::blocking::get</span>;
+
+<span class="kw">fn</span> <span class="fn">main</span>() -> <span class="var">Result</span>&lt;(), <span class="var">Box</span>&lt;<span class="kw">dyn</span> <span class="var">std::error::Error</span>&gt;&gt; {
+    <span class="kw">let</span> <span class="var">url</span> = <span class="str">"https://your-domain.com/600x400?bg=0d0d0d&text-colour=22d3ee&text=Rust+Image&neon=true"</span>;
+    <span class="kw">let</span> <span class="var">bytes</span> = <span class="fn">get</span>(<span class="var">url</span>)?.<span class="fn">bytes</span>()?;
+    <span class="var">fs</span>::<span class="fn">write</span>(<span class="str">"output.png"</span>, <span class="var">bytes</span>)?;
+    <span class="fn">println!</span>(<span class="str">"Image saved!"</span>);
+    <span class="kw">Ok</span>(())
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- GO -->
+      <div id="ex-go" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Go</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">GO</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="kw">package</span> <span class="var">main</span>
+
+<span class="kw">import</span> (
+    <span class="str">"io"</span>
+    <span class="str">"net/http"</span>
+    <span class="str">"os"</span>
+)
+
+<span class="kw">func</span> <span class="fn">main</span>() {
+    url := <span class="str">"https://your-domain.com/600x400?bg=0d0d0d&text-colour=c084fc&text=Go+Image&neon=true"</span>
+    resp, _ := http.<span class="fn">Get</span>(url)
+    <span class="kw">defer</span> resp.Body.<span class="fn">Close</span>()
+    file, _ := os.<span class="fn">Create</span>(<span class="str">"output.png"</span>)
+    <span class="kw">defer</span> file.<span class="fn">Close</span>()
+    io.<span class="fn">Copy</span>(file, resp.Body)
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUBY -->
+      <div id="ex-ruby" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Ruby</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">RUBY</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="kw">require</span> <span class="str">'open-uri'</span>
+
+url = <span class="str">"https://your-domain.com/600x400?bg=0d0d0d&text-colour=f472b6&text=Ruby+Image&neon=true"</span>
+<span class="fn">URI.open</span>(url) <span class="kw">do</span> |<span class="var">image</span>|
+  <span class="fn">File.open</span>(<span class="str">'output.png'</span>, <span class="str">'wb'</span>) { |<span class="var">f</span>| <span class="var">f</span>.<span class="fn">write</span>(<span class="var">image</span>.<span class="fn">read</span>) }
+<span class="kw">end</span>
+<span class="fn">puts</span> <span class="str">"Saved!"</span>
+
+<span class="cm"># In Rails view</span>
+<span class="cm"># &lt;%= image_tag "https://your-domain.com/800x300?text=Rails&neon=true" %&gt;</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- SWIFT -->
+      <div id="ex-swift" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Swift / iOS</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">SWIFT 5</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre"><span class="kw">import</span> UIKit
+
+<span class="kw">let</span> urlString = <span class="str">"https://your-domain.com/600x400?bg=0d0d0d&text-colour=22d3ee&text=Swift+Image&neon=true"</span>
+<span class="kw">guard let</span> url = <span class="fn">URL</span>(string: urlString) <span class="kw">else</span> { <span class="kw">return</span> }
+
+<span class="kw">let</span> task = <span class="var">URLSession.shared.dataTask</span>(with: url) { data, _, _ <span class="kw">in</span>
+    <span class="kw">if let</span> data = data, <span class="kw">let</span> image = <span class="fn">UIImage</span>(data: data) {
+        <span class="var">DispatchQueue.main.async</span> {
+            <span class="var">imageView.image</span> = image
+        }
+    }
+}
+task.<span class="fn">resume</span>()</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- HTML -->
+      <div id="ex-html" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">HTML</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">HTML</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="cm">&lt;!-- Simple placeholder --&gt;</span>
+&lt;<span class="fn">img</span> src=<span class="str">"https://your-domain.com/600x400"</span> alt=<span class="str">"placeholder"</span> /&gt;
+
+<span class="cm">&lt;!-- Custom text & colors --&gt;</span>
+&lt;<span class="fn">img</span>
+  src=<span class="str">"https://your-domain.com/800x400?bg=0d0d0d&amp;text-colour=c084fc&amp;text=Hello+World&amp;neon=true&amp;bold=true"</span>
+  alt=<span class="str">"neon placeholder"</span>
+/&gt;
+
+<span class="cm">&lt;!-- OG meta tag --&gt;</span>
+&lt;<span class="fn">meta</span> property=<span class="str">"og:image"</span> content=<span class="str">"https://your-domain.com/1200x628?text=My+Site&amp;bg=0f0f1e&amp;text-colour=f1f0ff&amp;font-size=72"</span> /&gt;
+
+<span class="cm">&lt;!-- Twitter card --&gt;</span>
+&lt;<span class="fn">meta</span> name=<span class="str">"twitter:image"</span> content=<span class="str">"https://your-domain.com/1200x628?text=Twitter+Card&amp;bg=07070f&amp;text-colour=22d3ee&amp;neon=true"</span> /&gt;
+
+<span class="cm">&lt;!-- As CSS background --&gt;</span>
+&lt;<span class="fn">style</span>&gt;
+.hero {
+  background-image: url('https://your-domain.com/1920x1080?bg=0d0d0d&text-colour=ffffff&text=Hero+BG');
+}
+&lt;/<span class="fn">style</span>&gt;</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- REACT -->
+      <div id="ex-react" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">React / Next.js</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">JSX / TSX</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre><span class="cm">// PlaceholderImage component</span>
+<span class="kw">function</span> <span class="fn">PlaceholderImage</span>({ width = <span class="num">600</span>, height = <span class="num">400</span>, text, bg = <span class="str">'0d0d0d'</span>, color = <span class="str">'white'</span>, neon = <span class="kw">false</span> }) {
+  <span class="kw">const</span> <span class="var">params</span> = <span class="kw">new</span> <span class="fn">URLSearchParams</span>({ bg, <span class="str">'text-colour'</span>: color, ...(text && { text }), ...(neon && { neon: <span class="str">'true'</span> }) });
+  <span class="kw">const</span> <span class="var">src</span> = <span class="str">`https://your-domain.com/<span class="var">${width}</span>x<span class="var">${height}</span>?<span class="var">${params}</span>`</span>;
+  <span class="kw">return</span> &lt;<span class="fn">img</span> src={src} width={width} height={height} alt={text || <span class="str">`${width}x${height}`</span>} /&gt;;
+}
+
+<span class="cm">// Usage</span>
+<span class="kw">export default function</span> <span class="fn">Page</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="fn">div</span>&gt;
+      &lt;<span class="fn">PlaceholderImage</span> width={<span class="num">800</span>} height={<span class="num">400</span>} text=<span class="str">"Hero Image"</span> bg=<span class="str">"07070f"</span> color=<span class="str">"c084fc"</span> neon /&gt;
+      &lt;<span class="fn">PlaceholderImage</span> width={<span class="num">300</span>} height={<span class="num">300</span>} text=<span class="str">"Avatar"</span> bg=<span class="str">"7c3aed"</span> color=<span class="str">"white"</span> /&gt;
+    &lt;/<span class="fn">div</span>&gt;
+  );
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- VUE -->
+      <div id="ex-vue" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Vue.js</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">VUE 3</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre>&lt;<span class="fn">template</span>&gt;
+  &lt;<span class="fn">img</span> :src="imageUrl" :width="width" :height="height" :alt="text" /&gt;
+&lt;/<span class="fn">template</span>&gt;
+
+&lt;<span class="fn">script setup</span>&gt;
+<span class="kw">import</span> { <span class="var">computed</span> } <span class="kw">from</span> <span class="str">'vue'</span>;
+
+<span class="kw">const</span> <span class="var">props</span> = <span class="fn">defineProps</span>({
+  width: { <span class="kw">default</span>: <span class="num">600</span> }, height: { <span class="kw">default</span>: <span class="num">400</span> },
+  text: <span class="var">String</span>, bg: { <span class="kw">default</span>: <span class="str">'0d0d0d'</span> }, color: { <span class="kw">default</span>: <span class="str">'white'</span> }, neon: <span class="var">Boolean</span>
+});
+
+<span class="kw">const</span> <span class="var">imageUrl</span> = <span class="fn">computed</span>(() => {
+  <span class="kw">const</span> <span class="var">p</span> = <span class="kw">new</span> <span class="fn">URLSearchParams</span>({ bg: <span class="var">props.bg</span>, <span class="str">'text-colour'</span>: <span class="var">props.color</span> });
+  <span class="kw">if</span> (<span class="var">props.text</span>) <span class="var">p.set</span>(<span class="str">'text'</span>, <span class="var">props.text</span>);
+  <span class="kw">if</span> (<span class="var">props.neon</span>) <span class="var">p.set</span>(<span class="str">'neon'</span>, <span class="str">'true'</span>);
+  <span class="kw">return</span> <span class="str">`https://your-domain.com/<span class="var">${props.width}</span>x<span class="var">${props.height}</span>?<span class="var">${p}</span>`</span>;
+});
+&lt;/<span class="fn">script</span>&gt;</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- DART -->
+      <div id="ex-dart" style="margin-bottom:36px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--neon-cyan)">Dart / Flutter</h3>
+        <div class="code-block-wrap">
+          <div class="code-panel active">
+            <div class="code-header"><span class="code-lang">DART / FLUTTER</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+            <pre"><span class="kw">import</span> <span class="str">'package:flutter/material.dart'</span>;
+
+<span class="kw">class</span> <span class="fn">PlaceholderWidget</span> <span class="kw">extends</span> <span class="fn">StatelessWidget</span> {
+  <span class="kw">final int</span> width, height;
+  <span class="kw">final</span> <span class="var">String</span>? text;
+  <span class="kw">const</span> <span class="fn">PlaceholderWidget</span>({<span class="kw">this</span>.width = <span class="num">600</span>, <span class="kw">this</span>.height = <span class="num">400</span>, <span class="kw">this</span>.text});
+
+  <span class="kw">String get</span> <span class="fn">imageUrl</span> {
+    <span class="kw">var</span> url = <span class="str">'https://your-domain.com/${width}x${height}?bg=0d0d0d&text-colour=22d3ee&neon=true'</span>;
+    <span class="kw">if</span> (text != <span class="kw">null</span>) url += <span class="str">'&text=${text!.replaceAll(' ', '+')}'</span>;
+    <span class="kw">return</span> url;
+  }
+
+  <span class="kw">@override</span>
+  <span class="fn">Widget</span> <span class="fn">build</span>(<span class="fn">BuildContext</span> context) =>
+      <span class="fn">Image.network</span>(imageUrl, width: width.<span class="fn">toDouble</span>(), height: height.<span class="fn">toDouble</span>());
+}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEPLOY -->
+    <section class="doc-section" id="deploy">
+      <h2>Deploy Guide</h2>
+      <p>Deploy this API to any Node.js-compatible platform. The project is a standard Express.js server using <code>canvas</code> for image generation.</p>
+
+      <div class="alert alert-warn">⚠️ The <code>canvas</code> package requires native binaries. Platforms that support Node.js with native modules are recommended (Vercel, Railway, Render, VPS).</div>
+    </section>
+
+    <section class="doc-section" id="vercel">
+      <h2>Vercel</h2>
+      <div class="code-block-wrap">
+        <div class="code-panel active">
+          <div class="code-header"><span class="code-lang">vercel.json</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+          <pre>{
+  <span class="str">"version"</span>: <span class="num">2</span>,
+  <span class="str">"builds"</span>: [{ <span class="str">"src"</span>: <span class="str">"server.js"</span>, <span class="str">"use"</span>: <span class="str">"@vercel/node"</span> }],
+  <span class="str">"routes"</span>: [{ <span class="str">"src"</span>: <span class="str">"/(.*)"</span>, <span class="str">"dest"</span>: <span class="str">"server.js"</span> }]
+}</pre>
+        </div>
+      </div>
+      <div class="code-block-wrap" style="margin-top:12px">
+        <div class="code-panel active">
+          <div class="code-header"><span class="code-lang">TERMINAL</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+          <pre>npm i -g vercel
+vercel login
+vercel --prod</pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="railway">
+      <h2>Railway</h2>
+      <div class="code-block-wrap">
+        <div class="code-panel active">
+          <div class="code-header"><span class="code-lang">TERMINAL</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+          <pre><span class="cm"># Install Railway CLI</span>
+npm install -g @railway/cli
+railway login
+railway init
+railway up
+
+<span class="cm"># Set port env variable in Railway dashboard:</span>
+<span class="cm"># PORT = 3000 (auto-set by Railway)</span></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="doc-section" id="render">
+      <h2>Render / VPS / Docker</h2>
+      <div class="code-block-wrap">
+        <div class="code-panel active">
+          <div class="code-header"><span class="code-lang">DOCKERFILE</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+          <pre>FROM node:<span class="num">20</span>-slim
+
+<span class="cm"># Install canvas dependencies</span>
+RUN apt-get update && apt-get install -y \
+    libcairo2-dev libpango1.0-dev libjpeg-dev \
+    libgif-dev librsvg2-dev && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE <span class="num">3000</span>
+CMD [<span class="str">"node"</span>, <span class="str">"server.js"</span>]</pre>
+        </div>
+      </div>
+      <div class="code-block-wrap" style="margin-top:12px">
+        <div class="code-panel active">
+          <div class="code-header"><span class="code-lang">TERMINAL</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+          <pre>docker build -t placeholder-api .
+docker run -p 3000:3000 placeholder-api</pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <p>Placeholder Image Text API — Open Source · MIT License</p>
+  <p style="margin-top:8px"><a href="/home">Generator</a> · <a href="/api">Health Check</a> · <a href="https://github.com" target="_blank">GitHub</a></p>
+</footer>
+
+<script>
+  // Drawer
+  const drawerOverlay = document.getElementById('drawerOverlay');
+  const drawer = document.getElementById('drawer');
+  document.getElementById('hamburgerBtn').onclick = () => { drawer.classList.add('open'); drawerOverlay.classList.add('open'); };
+  document.getElementById('drawerClose').onclick = closeDrawer;
+  drawerOverlay.onclick = closeDrawer;
+  function closeDrawer() { drawer.classList.remove('open'); drawerOverlay.classList.remove('open'); }
+
+  // Copy code
+  function copyCode(btn) {
+    const pre = btn.closest('.code-panel').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1800);
+    });
+  }
+
+  // Sidebar active on scroll
+  const sections = document.querySelectorAll('.doc-section');
+  const links = document.querySelectorAll('.sidebar-link');
+  window.addEventListener('scroll', () => {
+    let cur = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) cur = s.id; });
+    links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + cur));
+  });
+</script>
+
+</body>
+</html>
