@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "canvas": "^2.11.2",
+    "@napi-rs/canvas": "^0.1.53",
     "cors": "^2.8.5"
   },
   "engines": {

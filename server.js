@@ -1,5 +1,5 @@
 const express = require('express');
-const { createCanvas } = require('canvas');
+const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const cors = require('cors');
 const path = require('path');
 
@@ -165,7 +165,7 @@ function generateImage(params) {
     }
   });
 
-  // Watermark (optional, size info at bottom corner)
+  // Watermark
   ctx.font = `11px Arial`;
   ctx.textAlign = 'right';
   ctx.fillStyle = 'rgba(255,255,255,0.2)';
@@ -175,12 +175,11 @@ function generateImage(params) {
 }
 
 // ─── API Route: /api/:WxH ─────────────────────────────────────────────────────
-// Pattern: /api/600x400 or /600x400/neon=false/dark?text-colour=white&text=hello
 app.get(['/api/:size', '/api/:size/*'], (req, res) => {
   handleImageRequest(req, res);
 });
 
-// Legacy URL style (your format): /600x400/neon=false/dark
+// Legacy URL style: /600x400/neon=false/dark
 app.get('/:size([0-9]+x[0-9]+)/:opts(*)', (req, res) => {
   handleImageRequest(req, res);
 });
@@ -189,7 +188,7 @@ app.get('/:size([0-9]+x[0-9]+)', (req, res) => {
   handleImageRequest(req, res);
 });
 
-function handleImageRequest(req, res) {
+async function handleImageRequest(req, res) {
   try {
     // Parse size
     const sizeStr = (req.params.size || '600x400').toLowerCase();
@@ -206,7 +205,6 @@ function handleImageRequest(req, res) {
         const [k, v] = part.split('=');
         pathParams[k.toLowerCase()] = v;
       } else {
-        // Named bg colors like /dark /light /blue
         if (['dark', 'light', 'black', 'white', 'red', 'blue', 'green', 'purple', 'yellow', 'orange', 'pink', 'gray'].includes(part.toLowerCase())) {
           pathParams.bg = part;
         }
@@ -258,10 +256,14 @@ function handleImageRequest(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
+    // @napi-rs/canvas: toBuffer() is async and returns a Promise
     if (fmt === 'jpeg') {
-      res.send(canvas.toBuffer('image/jpeg', { quality: 0.92 }));
+      // quality is 0–100 for @napi-rs/canvas (not 0–1)
+      const buffer = await canvas.toBuffer('image/jpeg', 92);
+      res.send(buffer);
     } else {
-      res.send(canvas.toBuffer('image/png'));
+      const buffer = await canvas.toBuffer('image/png');
+      res.send(buffer);
     }
   } catch (err) {
     console.error(err);
